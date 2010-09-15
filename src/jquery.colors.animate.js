@@ -1,11 +1,9 @@
 /**
  * jQuery Colors Animate
- * @license Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
 */
 
 /// Based on http://github.com/jquery/jquery-color
-
-(function($){
 
 /// We override the animation for all of these color styles
   $.each(['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color', 'outlineColor'], function(i,attr){
@@ -78,5 +76,3 @@
 
     return color;
   };
-
-})(jQuery);

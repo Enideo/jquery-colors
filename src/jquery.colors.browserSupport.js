@@ -1,9 +1,7 @@
 /**
  * jQuery Colors Browser Support
- * @license Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
 */
-
-(function($){
 
   $.extend($.support,{
     rgba : /rgba/.test( $('<div/>').attr('style','background:#f00;background:rgba(0,0,0,0.5);').css('background-color') ),
@@ -14,5 +12,3 @@
   if( 'rgba' in $.support && $.support.rgba ){
     $.colors.defaultString = 'rgba';
   }
-
-})(jQuery);

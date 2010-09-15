@@ -1,10 +1,7 @@
 /**
  * jQuery Colors Core
- * @license Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
 */
-
-(function($){
-
 
 var Color = function(color, format, model){
 
@@ -308,106 +305,23 @@ Color.prototype = {
 
 Color.formats = {
 
-  'array3Normalized' : {
+  'array3Octet' : {
 
-    validate : function( color , maxLength ){
+    validate : function( color, maxLength ){
 
       var a=0, maxLength = maxLength || 3;
 
       if( $.isArray(color) && color.length==maxLength ){
         while ( a<maxLength ){
-          if( typeof color[a] == 'number' && color[a]<=1 && color[a]>=0 ){
+          if( typeof color[a] == 'number' && color[a]>=0 &&
+          ( a<3 && color[a]<=255 && /^\d+$/.test(color[a].toString()) ) ||
+          ( a==3 && color[a]<=1 ) ){
             a++;
           }else{
             break;
           }
         }
         if( a==maxLength ){
-          return true;
-        }
-      }
-
-      return false;
-
-    },
-
-
-    toModel : {
-
-      'RGB' : function ( color ){
-
-        return [ color[0]*255, color[1]*255, color[2]*255 ];
-
-      }
-
-    },
-
-    fromModel : {
-
-      'RGB' : function ( color ){
-
-        return [ color[0]/255, color[1]/255, color[2]/255 ];
-
-      }
-
-    }
-
-  },
-
-  'array4Normalized' : {
-
-    validate : function( color ){
-
-      return Color.formats.array3Normalized.validate( color, 4 );
-
-    },
-
-    toModel : {
-
-      'RGB' : function ( color ){
-
-        return [ color[0]*255, color[1]*255, color[2]*255, color[3] ];
-
-      }
-
-    },
-
-    fromModel : {
-
-      'RGB' : function ( color ){
-
-        var a, color = color.slice(0);
-
-        for( a in color){
-          if ( a!=3 && color[a] ){
-            color[a]+=1;
-            color[a]/=256;
-          }
-        }
-        return [ color[0], color[1], color[2], color[3] ];
-
-
-      }
-
-    }
-
-  },
-
-  'array3Octet' : {
-
-    validate : function( color ){
-
-      var a=0;
-
-      if( $.isArray(color) && color.length==3 ){
-        while ( a<3 ){
-          if( typeof color[a] == 'number' && color[a]<=255 && color[a]>=0 && /^\d+$/.test(color[a].toString()) ){
-            a++;
-          }else{
-            break;
-          }
-        }
-        if( a==3 ){
           return true;
         }
       }
@@ -441,25 +355,7 @@ Color.formats = {
 
     validate : function( color ){
 
-      var a=0;
-
-      if( $.isArray(color) && color.length==4 ){
-        while ( a<3 ){
-          if( typeof color[a] == 'number' && color[a]<=255 && color[a]>=0 && /^\d+$/.test(color[a].toString()) ){
-            a++;
-          }else{
-            break;
-          }
-        }
-        if( a==3 && color[3]>=0 && color[3]<=1 ){
-          a++;
-        }
-        if( a==4 ){
-          return true;
-        }
-      }
-
-      return false;
+      return Color.formats.array3Octet.validate( color, 4 );
 
     },
 
@@ -492,8 +388,6 @@ Color.formats = {
 
     }
   },
-
-  /// Strings
 
   'rgb' : {
 
@@ -546,91 +440,6 @@ Color.formats = {
       }
     },
     model : 'RGB'
-  },
-
-  'rgba' : {
-
-    validate : function( color, returnTuples ){
-
-      var a=1, result;
-
-      if( color && typeof color == 'string' &&
-        (result = /^rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*(0|1|0\.[0-9]+)\s*\)$/.exec(color)) ){
-
-        while ( a<4 ){
-          result[a] = parseInt(result[a])
-          if( result[a] < 256 ){
-            a++;
-          }else{
-            break;
-          }
-        }
-
-        if( a==4 && result[4]>=0 && result[4]<=1 ){
-          result[a] = parseFloat(result[a])
-          a++;
-        }
-
-        if( a==5 ){
-          if( returnTuples ){
-            result.shift();
-            return result.slice(0);
-          }else{
-            return true;
-          }
-        }
-
-      }
-      return false;
-    },
-
-    fromModel : {
-
-      'RGB' : function(rgb){
-        return 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + rgb[3] + ')';
-      }
-    },
-
-    toModel : {
-
-      'RGB' : function(rgbaString){
-        var result = Color.formats.rgba.validate(rgbaString,true);
-        if(result===false){
-          return null;
-        }else{
-          return result;
-        }
-      }
-    },
-    model : 'RGB'
-  },
-
-  'transparent' : {
-
-    validate : function( color ){
-
-      return ( color && typeof color == 'string' && /^transparent$/i.test(color) );
-
-    },
-
-    fromModel : {
-
-      'RGB' : function(rgb){
-        if( rgb[3]==0 ) {
-          return 'transparent';
-        }else{
-          throw('Color is not transparent: ' + rgb.toString() );
-        }
-      }
-    },
-
-    toModel : {
-
-      'RGB' : function( ){
-        return [255,255,255,0];
-      }
-
-    }
   }
 
 }
@@ -713,6 +522,3 @@ Color.defaultString = 'rgb';
 if($.colors===undefined){
   $.extend({colors:Color});
 }
-
-
-})(jQuery);
