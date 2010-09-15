@@ -3,13 +3,12 @@
  * @license Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
 */
 
-
 (function($){
 
 /**
  * jQuery Colors Core
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
 */
-
 
 var Color = function(color, format, model){
 
@@ -313,6 +312,293 @@ Color.prototype = {
 
 Color.formats = {
 
+  'array3Octet' : {
+
+    validate : function( color, maxLength ){
+
+      var a=0, maxLength = maxLength || 3;
+
+      if( $.isArray(color) && color.length==maxLength ){
+        while ( a<maxLength ){
+          if( typeof color[a] == 'number' && color[a]>=0 &&
+          ( a<3 && color[a]<=255 && /^\d+$/.test(color[a].toString()) ) ||
+          ( a==3 && color[a]<=1 ) ){
+            a++;
+          }else{
+            break;
+          }
+        }
+        if( a==maxLength ){
+          return true;
+        }
+      }
+
+      return false;
+
+    },
+
+    toModel : {
+
+      'RGB' : function ( color ){
+
+        return color.slice(0,3);
+
+      }
+
+    },
+
+    fromModel : {
+
+      'RGB' : function ( color ){
+
+        return color.slice(0,3);
+
+      }
+
+    }
+  },
+
+  'array3Octet1Normalized' : {
+
+    validate : function( color ){
+
+      return Color.formats.array3Octet.validate( color, 4 );
+
+    },
+
+    toModel : {
+
+      'RGB' : function ( color ){
+
+        return color.slice(0,4);
+
+      }
+
+    },
+
+    fromModel : {
+
+      'RGB' : function ( color ){
+
+        var a=0;
+
+        color = color.slice(0,4)
+
+        while(a<3){
+          color[a] = Math.round( color[a] );
+          a++;
+        }
+
+        return color;
+
+      }
+
+    }
+  },
+
+  'rgb' : {
+
+    validate : function( color, returnTuples ){
+
+      var a=1, result;
+
+      if( color && typeof color == 'string' &&
+        (result = /^rgb\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)$/.exec(color)) ){
+
+        while ( a<4 ){
+          result[a] = parseInt(result[a])
+          if( result[a] < 256 ){
+            a++;
+          }else{
+            break;
+          }
+        }
+
+        if( a==4 ){
+          if( returnTuples ){
+            result.shift();
+            return result.slice(0);
+          }else{
+            return true;
+          }
+        }
+
+      }
+      return false;
+    },
+
+    fromModel : {
+
+      'RGB' : function(rgb){
+        return 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+      }
+    },
+
+    toModel : {
+
+      'RGB' : function(rgbString){
+        var result = Color.formats.rgb.validate(rgbString,true);
+        if(result===false){
+          return null;
+        }else{
+          return result;
+        }
+
+      }
+    },
+    model : 'RGB'
+  }
+
+}
+
+
+Color.models = {
+  'RGB' : {
+
+    sanitize : function( rgb ){
+      var a;
+
+      if ( !rgb || !$.isArray(rgb) ){
+        rgb = [
+          Math.floor(256*Math.random()),
+          Math.floor(256*Math.random()),
+          Math.floor(256*Math.random()),
+          Math.random()
+        ];
+      }
+
+      while( rgb.length<4 ){
+
+        if(rgb.length==3){
+          rgb.push( 1 );
+        }else{
+          rgb.push( 0 );
+        }
+
+      }
+
+      rgb = rgb.slice(0,4);
+
+      for( a=0; a<rgb.length; a++ ){
+
+        if ( !rgb[a] ){
+          rgb[a] = 0;
+        }
+
+        if( a<3 ){
+
+          if( rgb[a] > 255 ){
+            rgb[a] = 255;
+          }
+          if( rgb[a] < 0 ){
+            rgb[a] = 0;
+          }
+        }else if ( a==3 ){
+          rgb[a] = parseFloat(rgb[a])
+          if( rgb[a] > 1 ){
+            rgb[a] = 1;
+          }
+          if( rgb[a] < 0 ){
+            rgb[a] = 0;
+          }
+        }
+      }
+
+      return rgb;
+    },
+
+    parameterIndexes : {
+      'r':0,
+      'g':1,
+      'b':2,
+      'a':3,
+      'red':0,
+      'green':1,
+      'blue':2,
+      'alpha':3
+    }
+
+  }
+};
+
+Color.convertModels = {};
+
+Color.defaultInputModel = Color.defaultModel = 'RGB';
+Color.defaultString = 'rgb';
+
+if($.colors===undefined){
+  $.extend({colors:Color});
+}
+/**
+ * jQuery Colors rgba format
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
+*/
+$.extend($.colors.formats,{
+
+  'rgba' : {
+
+    validate : function( color, returnTuples ){
+
+      var a=1, result;
+
+      if( color && typeof color == 'string' &&
+        (result = /^rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*(0|1|0\.[0-9]+)\s*\)$/.exec(color)) ){
+
+        while ( a<4 ){
+          result[a] = parseInt(result[a])
+          if( result[a] < 256 ){
+            a++;
+          }else{
+            break;
+          }
+        }
+
+        if( a==4 && result[4]>=0 && result[4]<=1 ){
+          result[a] = parseFloat(result[a])
+          a++;
+        }
+
+        if( a==5 ){
+          if( returnTuples ){
+            result.shift();
+            return result.slice(0);
+          }else{
+            return true;
+          }
+        }
+
+      }
+      return false;
+    },
+
+    fromModel : {
+
+      'RGB' : function(rgb){
+        return 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + rgb[3] + ')';
+      }
+    },
+
+    toModel : {
+
+      'RGB' : function(rgbaString){
+        var result = Color.formats.rgba.validate(rgbaString,true);
+        if(result===false){
+          return null;
+        }else{
+          return result;
+        }
+      }
+    },
+    model : 'RGB'
+  }
+
+});/**
+ * jQuery Colors Normalized RGB format
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
+*/
+
+$.extend($.colors.formats,{
+
   'array3Normalized' : {
 
     validate : function( color , maxLength ){
@@ -396,336 +682,12 @@ Color.formats = {
 
     }
 
-  },
-
-  'array3Octet' : {
-
-    validate : function( color ){
-
-      var a=0;
-
-      if( $.isArray(color) && color.length==3 ){
-        while ( a<3 ){
-          if( typeof color[a] == 'number' && color[a]<=255 && color[a]>=0 && /^\d+$/.test(color[a].toString()) ){
-            a++;
-          }else{
-            break;
-          }
-        }
-        if( a==3 ){
-          return true;
-        }
-      }
-
-      return false;
-
-    },
-
-    toModel : {
-
-      'RGB' : function ( color ){
-
-        return color.slice(0,3);
-
-      }
-
-    },
-
-    fromModel : {
-
-      'RGB' : function ( color ){
-
-        return color.slice(0,3);
-
-      }
-
-    }
-  },
-
-  'array3Octet1Normalized' : {
-
-    validate : function( color ){
-
-      var a=0;
-
-      if( $.isArray(color) && color.length==4 ){
-        while ( a<3 ){
-          if( typeof color[a] == 'number' && color[a]<=255 && color[a]>=0 && /^\d+$/.test(color[a].toString()) ){
-            a++;
-          }else{
-            break;
-          }
-        }
-        if( a==3 && color[3]>=0 && color[3]<=1 ){
-          a++;
-        }
-        if( a==4 ){
-          return true;
-        }
-      }
-
-      return false;
-
-    },
-
-    toModel : {
-
-      'RGB' : function ( color ){
-
-        return color.slice(0,4);
-
-      }
-
-    },
-
-    fromModel : {
-
-      'RGB' : function ( color ){
-
-        var a=0;
-
-        color = color.slice(0,4)
-
-        while(a<3){
-          color[a] = Math.round( color[a] );
-          a++;
-        }
-
-        return color;
-
-      }
-
-    }
-  },
-
-  /// Strings
-
-  'rgb' : {
-
-    validate : function( color, returnTuples ){
-
-      var a=1, result;
-
-      if( color && typeof color == 'string' &&
-        (result = /^rgb\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)$/.exec(color)) ){
-
-        while ( a<4 ){
-          result[a] = parseInt(result[a])
-          if( result[a] < 256 ){
-            a++;
-          }else{
-            break;
-          }
-        }
-
-        if( a==4 ){
-          if( returnTuples ){
-            result.shift();
-            return result.slice(0);
-          }else{
-            return true;
-          }
-        }
-
-      }
-      return false;
-    },
-
-    fromModel : {
-
-      'RGB' : function(rgb){
-        return 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
-      }
-    },
-
-    toModel : {
-
-      'RGB' : function(rgbString){
-        var result = Color.formats.rgb.validate(rgbString,true);
-        if(result===false){
-          return null;
-        }else{
-          return result;
-        }
-
-      }
-    },
-    model : 'RGB'
-  },
-
-  'rgba' : {
-
-    validate : function( color, returnTuples ){
-
-      var a=1, result;
-
-      if( color && typeof color == 'string' &&
-        (result = /^rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*(0|1|0\.[0-9]+)\s*\)$/.exec(color)) ){
-
-        while ( a<4 ){
-          result[a] = parseInt(result[a])
-          if( result[a] < 256 ){
-            a++;
-          }else{
-            break;
-          }
-        }
-
-        if( a==4 && result[4]>=0 && result[4]<=1 ){
-          result[a] = parseFloat(result[a])
-          a++;
-        }
-
-        if( a==5 ){
-          if( returnTuples ){
-            result.shift();
-            return result.slice(0);
-          }else{
-            return true;
-          }
-        }
-
-      }
-      return false;
-    },
-
-    fromModel : {
-
-      'RGB' : function(rgb){
-        return 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + rgb[3] + ')';
-      }
-    },
-
-    toModel : {
-
-      'RGB' : function(rgbaString){
-        var result = Color.formats.rgba.validate(rgbaString,true);
-        if(result===false){
-          return null;
-        }else{
-          return result;
-        }
-      }
-    },
-    model : 'RGB'
-  },
-
-  'transparent' : {
-
-    validate : function( color ){
-
-      return ( color && typeof color == 'string' && /^transparent$/i.test(color) );
-
-    },
-
-    fromModel : {
-
-      'RGB' : function(rgb){
-        if( rgb[3]==0 ) {
-          return 'transparent';
-        }else{
-          throw('Color is not transparent: ' + rgb.toString() );
-        }
-      }
-    },
-
-    toModel : {
-
-      'RGB' : function( ){
-        return [255,255,255,0];
-      }
-
-    }
   }
 
-}
-
-
-Color.models = {
-  'RGB' : {
-
-    sanitize : function( rgb ){
-      var a;
-
-      if ( !rgb || !$.isArray(rgb) ){
-        rgb = [
-          Math.floor(256*Math.random()),
-          Math.floor(256*Math.random()),
-          Math.floor(256*Math.random()),
-          Math.random()
-        ];
-      }
-
-      while( rgb.length<4 ){
-
-        if(rgb.length==3){
-          rgb.push( 1 );
-        }else{
-          rgb.push( 0 );
-        }
-
-      }
-
-      rgb = rgb.slice(0,4);
-
-      for( a=0; a<rgb.length; a++ ){
-
-        if ( !rgb[a] ){
-          rgb[a] = 0;
-        }
-
-        if( a<3 ){
-
-          if( rgb[a] > 255 ){
-            rgb[a] = 255;
-          }
-          if( rgb[a] < 0 ){
-            rgb[a] = 0;
-          }
-        }else if ( a==3 ){
-          rgb[a] = parseFloat(rgb[a])
-          if( rgb[a] > 1 ){
-            rgb[a] = 1;
-          }
-          if( rgb[a] < 0 ){
-            rgb[a] = 0;
-          }
-        }
-      }
-
-      return rgb;
-    },
-
-    parameterIndexes : {
-      'r':0,
-      'g':1,
-      'b':2,
-      'a':3,
-      'red':0,
-      'green':1,
-      'blue':2,
-      'alpha':3
-    }
-
-  }
-};
-
-Color.convertModels = {};
-
-Color.defaultInputModel = Color.defaultModel = 'RGB';
-Color.defaultString = 'rgb';
-
-if($.colors===undefined){
-  $.extend({colors:Color});
-}
-
-
-
-
-/**
+});/**
  * jQuery Colors Hex String
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
 */
-
 
 var hexStringObject = {
   'hex' : {
@@ -795,15 +757,45 @@ var hexStringObject = {
   }
 };
 
-$.extend($.colors.formats,hexStringObject);
-
-
-
-/**
- * jQuery Colors Name
+$.extend($.colors.formats,hexStringObject);/**
+ * jQuery Colors transparent format
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
 */
 
+$.extend($.colors.formats,{
 
+  'transparent' : {
+
+    validate : function( color ){
+
+      return ( color && typeof color == 'string' && /^transparent$/i.test(color) );
+
+    },
+
+    fromModel : {
+
+      'RGB' : function(rgb){
+        if( rgb[3]==0 ) {
+          return 'transparent';
+        }else{
+          throw('Color is not transparent: ' + rgb.toString() );
+        }
+      }
+    },
+
+    toModel : {
+
+      'RGB' : function( ){
+        return [255,255,255,0];
+      }
+
+    }
+  }
+
+});/**
+ * jQuery Colors Name
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
+*/
 var namedStrings = {
 
   'name' : {
@@ -1007,14 +999,100 @@ var namedStrings = {
 
 };
 
-$.extend($.colors.formats,namedStrings);
-
-
-
-/**
- * jQuery Colors HSL
+$.extend($.colors.formats,namedStrings);/**
+ * jQuery Colors Animate
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
 */
 
+/// Based on http://github.com/jquery/jquery-color
+
+/// We override the animation for all of these color styles
+  $.each(['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color', 'outlineColor'], function(i,attr){
+    $.fx.step[attr] = function(fx){
+      var prefferedModel;
+
+      if ( !fx.colorInit ) {
+        fx.colorInit = true;
+
+        fx.start = $.colors( $(fx.elem).visibleColor( attr ) );
+
+        if( /^(|transparent)$/i.test( $.curCSS(fx.elem, attr) ) ){
+
+          /// in case rgba is supported, ensure a gradual change to transparent
+          fx.start.model('RGB').set('alpha',0);
+          /// RGB provides best gradual fade if alpha is not supported by the browser
+          prefferedModel = 'RGB';
+        }
+
+
+        if( fx.end=='transparent' ){
+          fx.middle = $.colors( $(fx.elem).parent().visibleColor( attr ) );
+          /// in case rgba is supported, ensure a gradual change to transparent
+          fx.middle.model('RGB').set('alpha',0);
+          /// RGB provides best gradual fade if alpha is not supported by the browser
+          prefferedModel = 'RGB';
+        }else if( fx.end=='' ){
+          $(fx.elem).css(attr,'');
+          fx.middle = $.colors( $(fx.elem).css(attr) );
+        }else{
+          fx.middle = $.colors(fx.end);
+        }
+
+        if(fx.options.mixModel!==undefined){
+          prefferedModel = fx.options.mixModel;
+        }
+        if(prefferedModel!==undefined){
+          fx.start.model(prefferedModel);
+          fx.middle.model(prefferedModel);
+        }
+
+      }
+
+      if(fx.pos!=1){
+        fx.elem.style[attr] = fx.start.mixWith( fx.middle, Math.max(Math.min(1-fx.pos,1),0) ).toString();
+      }else{
+        fx.elem.style[attr] = fx.end;
+      }
+
+    }
+  });
+
+
+  jQuery.fn.visibleColor = function(attr) {
+    var color, elem = this.get(0);
+
+    do {
+      color = $.curCSS(elem, attr);
+
+      /// Keep going until we find an element that has color, or we hit the body
+      if ( color != '' && color != 'transparent' ) break;
+
+      if( $.nodeName(elem, "body") ){
+        color = 'transparent';
+        break;
+      }
+
+      attr = "backgroundColor";
+    } while ( elem = elem.parentNode );
+
+    return color;
+  };/**
+ * jQuery Colors Browser Support
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
+*/
+
+  $.extend($.support,{
+    rgba : /rgba/.test( $('<div/>').attr('style','background:#f00;background:rgba(0,0,0,0.5);').css('background-color') ),
+    hsl : /hsl/.test( $('<div/>').attr('style','background:#f00;background:hsl(0,0,0);').css('background-color') ),
+    hsla : /hsla/.test( $('<div/>').attr('style','background:#f00;background:hsla(0,0,0,0.5);').css('background-color') )
+  });
+
+  if( 'rgba' in $.support && $.support.rgba ){
+    $.colors.defaultString = 'rgba';
+  }/**
+ * jQuery Colors HSL
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
+*/
 
 var hslRgbConversion = {
   /// Credits to http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
@@ -1183,91 +1261,6 @@ var hslRgbConversion = {
 
   hslFormats = {
 
-    'array3Normalized' : {
-      toModel : {
-        'HSL' : function ( color ){
-          return [ color[0]*360, color[1]*100, color[2]*100 ];
-        }
-      },
-
-      fromModel : {
-        'HSL' : function ( color ){
-          return [ color[0]/360, color[1]/100, color[2]/100 ];
-        }
-      }
-    },
-
-    'array4Normalized' : {
-      toModel : {
-        'HSL' : function ( color ){
-          return [ Math.round(color[0]*360), color[1]*100, color[2]*100, color[3] ];
-        }
-      },
-      fromModel : {
-        'HSL' : function ( color ){
-          return [ color[0]/360, color[1]/100, color[2]/100, color[3] ];
-        }
-      }
-    },
-
-    'array1Circle2Normalized' : {
-
-      validate : function( color , maxLength ){
-
-        var a=0, maxLength = maxLength || 3;
-
-        if( $.isArray(color) && color.length==maxLength ){
-          while ( a<maxLength ){
-            if( typeof color[a] == 'number' && color[a]>=0 &&
-              ( ( a==0 && color[a]<=360 ) || (a>0 && color[a]<=1 ) ) ){
-              a++;
-            }else{
-              break;
-            }
-          }
-          if( a==maxLength ){
-            return true;
-          }
-        }
-
-        return false;
-
-      },
-
-      toModel : {
-        'HSL' : function ( color ){
-          return [ color[0], color[1]*100, color[2]*100 ];
-        }
-      },
-      fromModel : {
-        'HSL' : function ( color ){
-          return [ color[0], color[1]/100, color[2]/100 ];
-        }
-      }
-
-    },
-
-    'array1Circle3Normalized' : {
-
-      validate : function( color ){
-
-        return hslFormats.array1Circle2Normalized.validate( color, 4 );
-
-      },
-
-      toModel : {
-        'HSL' : function ( color ){
-          return [ color[0], color[1]*100, color[2]*100, color[3] ];
-        }
-      },
-      fromModel : {
-        'HSL' : function ( color ){
-          return [ color[0], color[1]/100, color[2]/100, color[3] ];
-        }
-      }
-
-    },
-
     'array1Circle2Percentage' : {
 
       validate : function( color, maxLength ){
@@ -1327,225 +1320,164 @@ var hslRgbConversion = {
     }
 
 
-  },
-
-  hslStrings = {
-
-    'hsl' : {
-
-      validate : function( color, returnTuples ){
-
-        var a=1, result;
-
-        if( color && typeof color == 'string' &&
-          (result = /^hsl\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})%\s*,\s*([0-9]{1,3})%\s*\)$/.exec(color)) ){
-
-          while ( a<4 ){
-            result[a] = parseInt(result[a])
-            if( ( a==0 && result[a] <= 360 ) || ( a>0 && result[a]<=100 ) ){
-              a++;
-            }else{
-              break;
-            }
-          }
-
-          if( a==4 ){
-            if( returnTuples ){
-              result.shift();
-              return result.slice(0);
-            }else{
-              return true;
-            }
-          }
-
-        }
-        return false;
-      },
-
-      fromModel : {
-
-        'HSL' : function(hsl){
-          return 'hsl(' + Math.round(hsl[0]) + ',' + Math.round(hsl[1]) + ',' + Math.round(hsl[2]) + ')';
-        }
-      },
-
-      toModel : {
-
-        'HSL' : function(hslString){
-          var result = hslStrings.hsl.validate(hslString,true);
-          if(result===false){
-            return null;
-          }else{
-            return result;
-          }
-
-        }
-      },
-      model : 'HSL'
-    },
-
-    'hsla' : {
-
-      validate : function( color, returnTuples ){
-
-        var a=1, result;
-
-        if( color &&  typeof color == 'string' &&
-          (result = /^hsla\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})%\s*,\s*([0-9]{1,3})%\s*,\s*(0|1|0\.[0-9]+)\s*\)$/.exec(color)) ){
-
-          while ( a<4 ){
-            result[a] = parseInt(result[a])
-            if( ( a==0 && result[a] <= 360 ) || ( a>0 && result[a]<=100 ) ){
-              a++;
-            }else{
-              break;
-            }
-          }
-
-          if( a==4 && result[4]>=0 && result[4]<=1 ){
-            result[a] = parseFloat(result[a])
-            a++;
-          }
-
-          if( a==5 ){
-            if( returnTuples ){
-              return result.slice(1);
-            }else{
-              return true;
-            }
-          }
-
-        }
-        return false;
-      },
-
-      fromModel : {
-
-        'HSL' : function(hsl){
-          return 'hsla(' + Math.round(hsl[0]) + ',' + Math.round(hsl[1]) + ',' + Math.round(hsl[2]) + ',' + hsl[3] + ')';
-        }
-      },
-
-      toModel : {
-
-        'HSL' : function(hslaString){
-          var result = hslStrings.hsla.validate(hslaString,true);
-          if(result===false){
-            return null;
-          }else{
-            return result;
-          }
-        }
-      },
-      model : 'HSL'
-    }
-
-
   };
-
 
 $.extend(true, $.colors.convertModels,hslRgbConversion);
 $.extend($.colors.models,hslModel);
-$.extend(true,$.colors.formats,hslFormats);
-$.extend($.colors.formats,hslStrings);
-
-
-
-
-/**
- * jQuery Colors Animate
+$.extend($.colors.formats,hslFormats);/**
+ * jQuery Colors hsl format
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
 */
+$.extend($.colors.formats,{
 
-/// Based on http://github.com/jquery/jquery-color
+  'hsl' : {
 
-/// We override the animation for all of these color styles
-  $.each(['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color', 'outlineColor'], function(i,attr){
-    $.fx.step[attr] = function(fx){
-      var prefferedModel;
+    validate : function( color, returnTuples ){
 
-      if ( !fx.colorInit ) {
-        fx.colorInit = true;
+      var a=1, result;
 
-        fx.start = $.colors( $(fx.elem).visibleColor( attr ) );
+      if( color && typeof color == 'string' &&
+        (result = /^hsl\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})%\s*,\s*([0-9]{1,3})%\s*\)$/.exec(color)) ){
 
-        if( /^(|transparent)$/i.test( $.curCSS(fx.elem, attr) ) ){
-
-          /// in case rgba is supported, ensure a gradual change to transparent
-          fx.start.model('RGB').set('alpha',0);
-          /// RGB provides best gradual fade if alpha is not supported by the browser
-          prefferedModel = 'RGB';
+        while ( a<4 ){
+          result[a] = parseInt(result[a])
+          if( ( a==0 && result[a] <= 360 ) || ( a>0 && result[a]<=100 ) ){
+            a++;
+          }else{
+            break;
+          }
         }
 
+        if( a==4 ){
+          if( returnTuples ){
+            result.shift();
+            return result.slice(0);
+          }else{
+            return true;
+          }
+        }
 
-        if( fx.end=='transparent' ){
-          fx.middle = $.colors( $(fx.elem).parent().visibleColor( attr ) );
-          /// in case rgba is supported, ensure a gradual change to transparent
-          fx.middle.model('RGB').set('alpha',0);
-          /// RGB provides best gradual fade if alpha is not supported by the browser
-          prefferedModel = 'RGB';
-        }else if( fx.end=='' ){
-          $(fx.elem).css(attr,'');
-          fx.middle = $.colors( $(fx.elem).css(attr) );
+      }
+      return false;
+    },
+
+    fromModel : {
+
+      'HSL' : function(hsl){
+        return 'hsl(' + Math.round(hsl[0]) + ',' + Math.round(hsl[1]) + ',' + Math.round(hsl[2]) + ')';
+      }
+    },
+
+    toModel : {
+
+      'HSL' : function(hslString){
+        var result = $.colors.formats.hsl.validate(hslString,true);
+        if(result===false){
+          return null;
         }else{
-          fx.middle = $.colors(fx.end);
-        }
-
-        if(fx.options.mixModel!==undefined){
-          prefferedModel = fx.options.mixModel;
-        }
-        if(prefferedModel!==undefined){
-          fx.start.model(prefferedModel);
-          fx.middle.model(prefferedModel);
+          return result;
         }
 
       }
-
-      if(fx.pos!=1){
-        fx.elem.style[attr] = fx.start.mixWith( fx.middle, Math.max(Math.min(1-fx.pos,1),0) ).toString();
-      }else{
-        fx.elem.style[attr] = fx.end;
-      }
-
-    }
-  });
-
-
-  jQuery.fn.visibleColor = function(attr) {
-    var color, elem = this.get(0);
-
-    do {
-      color = $.curCSS(elem, attr);
-
-      /// Keep going until we find an element that has color, or we hit the body
-      if ( color != '' && color != 'transparent' ) break;
-
-      if( $.nodeName(elem, "body") ){
-        color = 'transparent';
-        break;
-      }
-
-      attr = "backgroundColor";
-    } while ( elem = elem.parentNode );
-
-    return color;
-  };
-
-
-
-/**
- * jQuery Colors Browser Support
-*/
-
-  $.extend($.support,{
-    rgba : /rgba/.test( $('<div/>').attr('style','background:#f00;background:rgba(0,0,0,0.5);').css('background-color') ),
-    hsl : /hsl/.test( $('<div/>').attr('style','background:#f00;background:hsl(0,0,0);').css('background-color') ),
-    hsla : /hsla/.test( $('<div/>').attr('style','background:#f00;background:hsla(0,0,0,0.5);').css('background-color') )
-  });
-
-  if( 'rgba' in $.support && $.support.rgba ){
-    $.colors.defaultString = 'rgba';
+    },
+    model : 'HSL'
   }
 
+});/**
+ * jQuery Colors hsla format
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
+*/
+$.extend($.colors.formats,{
 
+  'hsla' : {
+
+    validate : function( color, returnTuples ){
+
+      var a=1, result;
+
+      if( color &&  typeof color == 'string' &&
+        (result = /^hsla\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})%\s*,\s*([0-9]{1,3})%\s*,\s*(0|1|0\.[0-9]+)\s*\)$/.exec(color)) ){
+
+        while ( a<4 ){
+          result[a] = parseInt(result[a])
+          if( ( a==0 && result[a] <= 360 ) || ( a>0 && result[a]<=100 ) ){
+            a++;
+          }else{
+            break;
+          }
+        }
+
+        if( a==4 && result[4]>=0 && result[4]<=1 ){
+          result[a] = parseFloat(result[a])
+          a++;
+        }
+
+        if( a==5 ){
+          if( returnTuples ){
+            return result.slice(1);
+          }else{
+            return true;
+          }
+        }
+
+      }
+      return false;
+    },
+
+    fromModel : {
+
+      'HSL' : function(hsl){
+        return 'hsla(' + Math.round(hsl[0]) + ',' + Math.round(hsl[1]) + ',' + Math.round(hsl[2]) + ',' + hsl[3] + ')';
+      }
+    },
+
+    toModel : {
+
+      'HSL' : function(hslaString){
+        var result = $.colors.formats.hsla.validate(hslaString,true);
+        if(result===false){
+          return null;
+        }else{
+          return result;
+        }
+      }
+    },
+    model : 'HSL'
+  }
+
+});/**
+ * jQuery Colors Normalized HSL format
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
+*/
+$.extend(true, $.colors.formats,{
+
+  'array3Normalized' : {
+    toModel : {
+      'HSL' : function ( color ){
+        return [ color[0]*360, color[1]*100, color[2]*100 ];
+      }
+    },
+
+    fromModel : {
+      'HSL' : function ( color ){
+        return [ color[0]/360, color[1]/100, color[2]/100 ];
+      }
+    }
+  },
+
+  'array4Normalized' : {
+    toModel : {
+      'HSL' : function ( color ){
+        return [ Math.round(color[0]*360), color[1]*100, color[2]*100, color[3] ];
+      }
+    },
+    fromModel : {
+      'HSL' : function ( color ){
+        return [ color[0]/360, color[1]/100, color[2]/100, color[3] ];
+      }
+    }
+  }
+
+});
 
 })(jQuery);
