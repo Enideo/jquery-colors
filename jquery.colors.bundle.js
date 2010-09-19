@@ -753,7 +753,8 @@ var hexStringObject = {
         }
       }
 
-    }
+    },
+    model : 'RGB'
   }
 };
 
