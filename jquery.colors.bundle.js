@@ -163,7 +163,7 @@ function getSetParameter(parameter, value){
 };
 
 
-Color.prototype = {
+Color.fn = Color.prototype = {
 
   get : getSetParameter,
   set : getSetParameter,
@@ -232,77 +232,6 @@ Color.prototype = {
     }else{
       throw('Format does not exist');
     }
-
-  },
-
-
-  mixWith : function( colorsToAdd, options ){
-
-    var a=0, newBlend, mixer, model, baseDosage;
-
-    if( typeof options=='number'){
-      baseDosage = options;
-    }
-
-    newBlend = this.get();
-    model = this.model();
-
-    /// check array not a valid format before assuming multiple colors
-    if( $.isArray(colorsToAdd) ){
-      try{
-        mixer = Color(colorsToAdd);
-      }catch(e){
-        for ( a=0; a<colorsToAdd.length; a++ ){
-          if( colorsToAdd[a] instanceof Color == false ){
-            colorsToAdd[a] = Color(colorsToAdd[a]);
-          }
-
-          if(a==0){
-            mixer = colorsToAdd[a].model(model);
-          }else{
-            /// need to weigh in the mixers progressively stronger to get an overall equal blend
-            mixer = mixer.mixWith( colorsToAdd[a], a/(a+1) );
-          }
-        }
-      }
-
-    }else{
-      if( colorsToAdd instanceof Color == false ){
-        colorsToAdd = Color(colorsToAdd);
-      }
-      mixer = colorsToAdd;
-    }
-
-    mixer = mixer.model(model).get();
-
-    newBlend = newBlend.slice(0);
-    mixer = mixer.slice(0);
-
-    if( baseDosage==undefined ){
-      if(a){
-        baseDosage = 1/(a+1);
-      }else{
-        baseDosage = 0.5;
-      }
-    }
-
-    for ( a=0; a<newBlend.length; a++ ){
-
-      if( 'cycleMixes' in Color.models[ model ] && Color.models[ model ].cycleMixes[a] ){
-        if( Color.models[ model ].cycleMixes[a] > 0 ){
-          while( newBlend[a] > mixer[a] ) mixer[a] += Color.models[ model ].cycleMixes[a];
-        }else{
-          while( newBlend[a] < mixer[a] ) mixer[a] += Color.models[ model ].cycleMixes[a];
-        }
-      }
-
-      newBlend[a] = newBlend[a]*baseDosage + mixer[a]*(1-baseDosage) ;
-
-    }
-
-    newBlend = Color.models[model].sanitize(newBlend);
-
-    return $.extend($.colors(),{color: newBlend, currentModel:model});
 
   }
 
@@ -1001,6 +930,81 @@ var namedStrings = {
 };
 
 $.extend($.colors.formats,namedStrings);/**
+ * jQuery Colors Mix
+ * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
+*/
+
+$.colors.fn.mixWith = function( colorsToAdd, options ){
+
+  var a=0, newBlend, mixer, model, baseDosage;
+
+  if( typeof options=='number'){
+    baseDosage = options;
+  }
+
+  newBlend = this.get();
+  model = this.model();
+
+  /// check array not a valid format before assuming multiple colors
+  if( $.isArray(colorsToAdd) ){
+    try{
+      mixer = Color(colorsToAdd);
+    }catch(e){
+      for ( a=0; a<colorsToAdd.length; a++ ){
+        if( colorsToAdd[a] instanceof Color == false ){
+          colorsToAdd[a] = Color(colorsToAdd[a]);
+        }
+
+        if(a==0){
+          mixer = colorsToAdd[a].model(model);
+        }else{
+          /// need to weigh in the mixers progressively stronger to get an overall equal blend
+          mixer = mixer.mixWith( colorsToAdd[a], a/(a+1) );
+        }
+      }
+    }
+
+  }else{
+    if( colorsToAdd instanceof Color == false ){
+      colorsToAdd = Color(colorsToAdd);
+    }
+    mixer = colorsToAdd;
+  }
+
+  mixer = mixer.model(model).get();
+
+  newBlend = newBlend.slice(0);
+  mixer = mixer.slice(0);
+
+  if( baseDosage==undefined ){
+    if(a){
+      baseDosage = 1/(a+1);
+    }else{
+      baseDosage = 0.5;
+    }
+  }
+
+  for ( a=0; a<newBlend.length; a++ ){
+
+    if( 'cycleMixes' in Color.models[ model ] && Color.models[ model ].cycleMixes[a] ){
+      if( Color.models[ model ].cycleMixes[a] > 0 ){
+        while( newBlend[a] > mixer[a] ) mixer[a] += Color.models[ model ].cycleMixes[a];
+      }else{
+        while( newBlend[a] < mixer[a] ) mixer[a] += Color.models[ model ].cycleMixes[a];
+      }
+    }
+
+    newBlend[a] = newBlend[a]*baseDosage + mixer[a]*(1-baseDosage) ;
+
+  }
+
+  newBlend = Color.models[model].sanitize(newBlend);
+
+  return $.extend($.colors(),{color: newBlend, currentModel:model});
+
+}
+
+/**
  * jQuery Colors Animate
  * Copyright 2010 Enideo. Released under dual MIT and GPL licenses.
 */
