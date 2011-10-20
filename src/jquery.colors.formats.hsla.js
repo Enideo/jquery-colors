@@ -15,7 +15,7 @@ $.extend($.colors.formats,{
 
         while ( a<4 ){
           result[a] = parseInt(result[a])
-          if( ( a==0 && result[a] <= 360 ) || ( a>0 && result[a]<=100 ) ){
+          if( ( a==1 && result[a] <= 360 ) || ( a>1 && result[a]<=100 ) ){
             a++;
           }else{
             break;
